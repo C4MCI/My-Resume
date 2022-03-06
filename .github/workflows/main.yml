@@ -4,7 +4,7 @@ env:
   GO_VERSION: 1.16.x
 
 jobs:
-  build-infra:
+  test-infra:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -13,6 +13,6 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: test get-function
-        run: cd get-function && go test -v ./ && cd ../../
+        run: cd get-function && go test -v ./ && cd ../
       - name: test put-function
-        run: cd put-function && go test -v ./ && cd ../../
+        run: cd put-function && go test -v ./ && cd ../
