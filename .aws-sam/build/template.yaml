@@ -1,0 +1,170 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'resume
+
+  Sample SAM Template for resume
+
+  '
+Globals:
+  Function:
+    Timeout: 5
+Resources:
+  MyWebsite:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      BucketName: best-resume-ever
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      PolicyDocument:
+        Id: MyPolicy
+        Version: 2012-10-17
+        Statement:
+        - Sid: PublicReadForGetBucketObjects
+          Effect: Allow
+          Principal: '*'
+          Action: s3:GetObject
+          Resource:
+            Fn::Join:
+            - ''
+            - - 'arn:aws:s3:::'
+              - Ref: MyWebsite
+              - /*
+      Bucket:
+        Ref: MyWebsite
+  MyDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        ViewerCertificate:
+          AcmCertificateArn: arn:aws:acm:us-east-1:756610545617:certificate/38c55a7d-94ed-4aeb-a273-a359f442bbb4
+          SslSupportMethod: sni-only
+        Aliases:
+        - www.semihvicir.live
+        - semihvicir.live
+        DefaultCacheBehavior:
+          ViewerProtocolPolicy: redirect-to-https
+          TargetOriginId: best-resume-ever.s3-website.eu-central-1.amazonaws.com
+          DefaultTTL: 0
+          MinTTL: 0
+          MaxTTL: 0
+          ForwardedValues:
+            QueryString: false
+        Origins:
+        - DomainName: best-resume-ever.s3-website.eu-central-1.amazonaws.com
+          Id: best-resume-ever.s3-website.eu-central-1.amazonaws.com
+          CustomOriginConfig:
+            OriginProtocolPolicy: match-viewer
+        Enabled: 'true'
+        DefaultRootObject: index.html
+  MyRoute53Record:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: Z030782517T8XKPHHHVJ6
+      RecordSets:
+      - Name: semihvicir.live
+        Type: A
+        AliasTarget:
+          HostedZoneId: Z2FDTNDATAQYW2
+          DNSName:
+            Fn::GetAtt:
+            - MyDistribution
+            - DomainName
+      - Name: www.semihvicir.live
+        Type: A
+        AliasTarget:
+          HostedZoneId: Z030782517T8XKPHHHVJ6
+          DNSName: semihvicir.live
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: best-resume-ever
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: ID
+        AttributeType: S
+      KeySchema:
+      - AttributeName: ID
+        KeyType: HASH
+  GetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: best-resume-ever
+      CodeUri: GetFunction
+      Handler: get-function
+      Runtime: go1.x
+      Architectures:
+      - x86_64
+      Tracing: Active
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /get
+            Method: GET
+      Environment:
+        Variables:
+          PARAM1: VALUE
+    Metadata:
+      SamResourceId: GetFunction
+  PutFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: best-resume-ever
+      CodeUri: PutFunction
+      Handler: put-function
+      Runtime: go1.x
+      Architectures:
+      - x86_64
+      Tracing: Active
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /put
+            Method: GET
+      Environment:
+        Variables:
+          PARAM1: VALUE
+    Metadata:
+      SamResourceId: PutFunction
+Outputs:
+  GetAPI:
+    Description: API Gateway endpoint URL for Prod environment for First Function
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/get/
+  GetFunction:
+    Description: First Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - GetFunction
+      - Arn
+  GetFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      Fn::GetAtt:
+      - GetFunctionRole
+      - Arn
+  PutAPI:
+    Description: API Gateway endpoint URL for Prod environment for First Function
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/put/
+  PutFunction:
+    Description: First Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - PutFunction
+      - Arn
+  PutFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      Fn::GetAtt:
+      - PutFunctionRole
+      - Arn
